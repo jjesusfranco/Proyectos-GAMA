@@ -1,0 +1,179 @@
+/**
+* Name: JuntosFEMMAS
+* This wizard creates a new experiment file. 
+* Author: jesusf
+* Tags: 
+*/
+
+model juntos
+global {
+	
+	shape_file mi_archivo2<- shape_file("../inegi/tlajomulco.shp");
+	
+//Cargas un shapefile (huentitan2.shp) y creas una geometría basada en el área total del archivo.
+
+	
+  	geometry shape <-envelope(mi_archivo2);
+
+	init{
+	
+	
+	create manzana from:mi_archivo2 with:[ //Inicializas la especie manzana a partir de los datos del shapefile, asignando valores como población total, población femenina, etc.
+		pobtot::int(read("POBTOT")),
+		pobfem::int(read("POBFEM")),
+		pobmas::int(read("POBMAS")),
+		vivtot::int(read("VIVTOT")),
+		pob014::int(read("POB0_14")),
+		p_60ymas::int(read("P_60YMAS"))
+		
+];
+
+create manzana2 from:mi_archivo2 with:[ //Inicializas la especie manzana a partir de los datos del shapefile, asignando valores como población total, población femenina, etc.
+		pobtot::int(read("POBTOT")),
+		pobfem::int(read("POBFEM")),
+		pobmas::int(read("POBMAS")),
+		vivtot::int(read("VIVTOT")),
+		p_60ymas::int(read("P_60YMAS"))
+		
+];
+
+	
+	create persona number:100;	//creas 100 instancias de la especie persona.
+	}
+reflex principal {
+	ask manzana {
+		densidad <- pobfem /shape.area#m2; //Calculas la densidad de población femenina (pobfem) en cada manzana dividiendo por el área.
+		
+		
+	}
+	ask manzana2 {
+		densidad2 <- pobmas /shape.area#m2; //Calculas la densidad de población masculina (pobmas) en cada manzana dividiendo por el área.
+		
+		
+	}
+	list <float> mi_lista; 
+	list <float> mi_lista2;
+	mi_lista <- manzana collect(each.densidad);
+	mi_lista2 <- manzana2 collect(each.densidad2);
+	float max_dens_value <- max(mi_lista);
+	float max_dens_value2 <- max(mi_lista2);
+	write mi_lista;
+	write mi_lista2;
+	write max_dens_value;
+	write max_dens_value2;
+	ask manzana {
+		densidad <- (densidad/max_dens_value)*100;
+		
+		
+	}
+	ask manzana2 {
+		
+		densidad2 <- (densidad2/max_dens_value2)*100;
+		
+	}
+	mi_lista <- manzana collect(each.densidad);
+	mi_lista2 <- manzana2 collect(each.densidad2);
+	write mi_lista;
+	write mi_lista2; //densidades normalizadas
+}
+
+}
+
+species persona skills:[moving]{
+	int estatura;
+	int edad;
+	string nombre;
+	point ubicacion;
+	init {
+		location <- one_of(manzana).location;
+		
+	}reflex {
+		do wander;
+	}
+	aspect normal{draw circle(20) color:#red;
+	} 
+}
+
+
+species manzana {
+	int pobtot;
+	int p_60ymas;
+	int pobfem;
+	int pobmas;
+	int vivtot;
+	int pob014;
+	float densidad;
+	rgb mi_color;
+	rgb mi_color2 <-rgb (164, 251, 174, transparencia);
+	int transparencia <- 255;
+	aspect default{
+		if(densidad<0.25){//valor de densidad baja
+			mi_color <-rgb (164, 251, 174, transparencia);
+		}
+		else if (densidad<0.50){
+			mi_color <-rgb (223, 232, 66, transparencia);
+		}
+		else if (densidad<0.75){
+			mi_color <-rgb (213, 30, 75, transparencia);
+			
+		}
+		else{
+			mi_color <-#maroon;
+		}
+		draw shape color:mi_color;
+		//rojointenso, rojo, amarillo, verde
+		
+	}
+}	
+species manzana2 {
+	int pobtot;
+	int p_60ymas;
+	int pobfem;
+	int pobmas;
+	int vivtot;
+	float densidad2;
+	rgb mi_color;
+	rgb mi_color2 <-rgb (164, 251, 174, transparencia);
+	int transparencia <- 255;
+	aspect default{
+		if(densidad2<0.25){//valor de densidad baja
+			mi_color <-rgb (164, 251, 174, transparencia);
+		}
+		else if (densidad2<0.50){
+			mi_color <-rgb (223, 232, 66, transparencia);
+		}
+		else if (densidad2<0.75){
+			mi_color <-rgb (213, 30, 75, transparencia);
+			
+		}
+		else{
+			mi_color <-#maroon;
+		}
+		draw shape color:mi_color;
+		//rojointenso, rojo, amarillo, verde
+		
+	}
+}	
+
+experiment mi_experimento{
+	output {
+		display poblacion_femenina background:rgb (45, 45, 45, 255) {
+			species manzana aspect:default;
+			//species persona aspect:normal;
+		
+			
+			
+		}
+		display poblacion_masculina background:rgb (45, 45, 45, 255) {
+			species manzana2 aspect:default;
+			//species persona aspect:normal;
+		
+			
+			
+		}
+	}
+		
+	}		
+
+	
+

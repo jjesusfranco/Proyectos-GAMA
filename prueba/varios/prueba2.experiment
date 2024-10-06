@@ -1,0 +1,106 @@
+/**
+* Name: prueba2
+* This wizard creates a new test experiment 
+* Author: jesusf
+* Tags: 
+*/
+
+model datos
+
+global {
+    shape_file mi_archivo2 <- shape_file("../inegi/vallarta4.shp");
+    geometry shape <- envelope(mi_archivo2);
+
+    init {
+        create manzana from: mi_archivo2 with: [
+            pobtot::int(read("POBTOT")), // Población total
+            pob0_14::int(read("POB0_14")), // Población de 0 a 14 años
+            p15a29a::int(read("P15A29A")), // Población de 15 a 29 años
+            p30a59a::int(read("P30A59A")), // Población de 30 a 59 años
+            p_60ymas::int(read("P_60YMAS")) // Población de 60 años y más
+        ];
+
+        create persona number: 100;
+    }
+
+    reflex principal {
+        ask manzana {
+            densidad <- pobtot / shape.area; // m2
+
+            // Calcular proporciones de grupos de edad solo si pobtot es mayor que cero
+            if (pobtot > 0) {
+                propor_infantil <- (pob0_14 / pobtot) * 100;
+                propor_juvenil <- (p15a29a / pobtot) * 100;
+                propor_adulto <- (p30a59a / pobtot) * 100;
+                propor_adulto_mayor <- (p_60ymas / pobtot) * 100;
+            } else {
+                propor_infantil <- 0;
+                propor_juvenil <- 0;
+                propor_adulto <- 0;
+                propor_adulto_mayor <- 0;
+            }
+        }
+
+        // Salida opcional: imprimir proporciones para verificar cálculos
+        list <float> lista_proporciones;
+        lista_proporciones <- manzana collect (each.propor_infantil);
+        write lista_proporciones; // Esto imprimirá las proporciones de población infantil para cada manzana
+    }
+}
+
+species persona skills: [moving] {
+    int estatura;
+    int edad;
+    string nombre;
+    point ubicacion;
+
+    init {
+        location <- one_of(manzana).location;
+    }
+
+    reflex {
+        do wander;
+    }
+
+    aspect normal {
+        draw circle(20) color: #red;
+    }
+}
+
+species manzana {
+    int pobtot;
+    int pob0_14;
+    int p15a29a;
+    int p30a59a;
+    int p_60ymas;
+    
+    float densidad;
+    float propor_infantil;
+    float propor_juvenil;
+    float propor_adulto;
+    float propor_adulto_mayor;
+
+    rgb mi_color;
+    int transparencia <- 150;
+
+    aspect default {
+        if ( propor_adulto < 0.25) {
+            mi_color <- rgb(164, 251, 174, transparencia);
+        } else if ( propor_adulto < 0.50) {
+            mi_color <- rgb(223, 232, 66, transparencia);
+        } else if (propor_adulto < 0.75) {
+            mi_color <- rgb(213, 30, 75, transparencia);
+        } else {
+            mi_color <- #maroon;
+        }
+        draw shape color: mi_color;
+    }
+}
+
+experiment mi_experimento {
+    output {
+        display mi_visualizacion background: rgb(45, 45, 45, 255) {
+            species manzana aspect: default;
+        }
+    }
+}

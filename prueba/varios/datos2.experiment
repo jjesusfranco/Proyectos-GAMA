@@ -1,0 +1,219 @@
+/**
+* Name: Datos
+* This wizard creates a new test experiment 
+* Author: jesusf
+* Tags: 
+*/
+
+model datos
+
+global {
+	
+	shape_file mi_archivo2<- shape_file("../inegi/vallarta4.shp");
+	
+//Cargas un shapefile (huentitan2.shp) y creas una geometría basada en el área total del archivo.
+
+	
+  	geometry shape <-envelope(mi_archivo2);
+
+	init{
+	
+	
+	create manzana from:mi_archivo2 with:[ //Inicializas la especie manzana a partir de los datos del shapefile, asignando valores como población total, población femenina, etc.
+		// ###########################  POBLACION ###############################################################
+		pobtot::int(read("POBTOT")),            // Población total
+		pobfem::int(read("POBFEM")),            // Población femenina
+		ppobfem::int(read("PPOBFEM")),          // Porcentaje de población femenina
+		pobmas::int(read("POBMAS")),            // Población masculina
+		ppobmas::int(read("PPOBMAS")),          // Porcentaje de población masculina
+		pob0_14::int(read("POB0_14")),          // Población de 0 a 14 años
+		pob0_14_p::int(read("POB0_14_P")),  	// Porcentaje Población de 0 a 14 años
+		p15a29a::int(read("P15A29A")),    		// Población de 15 a 29 años
+		p15a29a_p::int(read("P15A29A_P")),  	// Porcentaje de la población de 15 a 29 años
+		p30a59a::int(read("P30A59A")),    		// Población de 30 a 59 años
+		p30a59a_p::int(read("P30A59A_P")),  	// Porcentaje de la población de 30 a 59 años
+		p_60ymas::int(read("P_60YMAS")),   		// Población de 60 años y más
+		p_60ymas_p::int(read("P_60YMAS_P")), 	// Porcentaje de la población de 60 años y más
+		p_cd_t::int(read("P_CD_T")),     		// Población con discapacidad
+		p_cd_p::int(read("P_CD_P")),     		// Porcentaje de la población con discapacidad
+		graproes::int(read("GRAPROES")),  		// Grado promedio de escolaridad
+		graproes_f::int(read("GRAPROES_F")), 	// Grado promedio de escolaridad de la población femenina
+		graproes_m::int(read("GRAPROES_M")), 	// Grado promedio de escolaridad de la población masculina
+		// #############################  VIVIENDA ################################################################
+		vivtot::int(read("VIVTOT")),     		// Total de viviendas
+		vivpar::int(read("VIVPAR")),     		// Total de viviendas particulares
+		vivpar_p::int(read("VIVPAR_P")),   		// Porcentaje de viviendas particulares
+		tvipahab::int(read("TVIPAHAB")),   		// Total de viviendas particulares habitadas
+		tvipahab_p::int(read("TVIPAHAB_P")),	// Porcentaje de viviendas particulares habitadas
+		vivnohab::int(read("VIVNOHAB")),  		// Viviendas particulares no habitadas
+		vivnohab_p::int(read("VIVNOHAB_P")), 	// Porcentaje de viviendas particulares no habitadas
+		prom_ocup::int(read("PROM_OCUP")),  	// Promedio de ocupantes en viviendas particulares habitadas
+		pro_ocup_c::int(read("PRO_OCUP_C")), 	// Promedio de ocupantes por cuarto en viviendas particulares habitadas
+		v3masocu::int(read("V3MASOCU")),   		// Viviendas particulares habitadas con 3 o más ocupantes por cuarto
+		v3masocu_p::int(read("V3MASOCU_P")), 	// Porcentaje de viviendas particulares habitadas con 3 o más ocupantes por cuarto
+		vph_pidt::int(read("VPH_PIDT")),   		// Viviendas particulares habitadas con piso de material diferente de tierra
+		vph_pidt_p::int(read("VPH_PIDT_P")), 	// Porcentaje de viviendas particulares habitadas con piso de material diferente de tierra
+		vph_c_el::int(read("VPH_C_EL")),   		// Viviendas particulares habitadas que disponen de energía eléctrica
+		vph_c_el_p::int(read("VPH_C_EL_P")), 	// Porcentaje de viviendas particulares habitadas que disponen de energía eléctrica
+		vph_exsa::int(read("VPH_EXSA")),   		// Viviendas particulares habitadas que disponen de excusado o sanitario
+		vph_exsa_p::int(read("VPH_EXSA_P")), 	// Porcentaje de viviendas particulares habitadas que disponen de excusado o sanitario
+		vph_dren::int(read("VPH_DREN")),   		// Viviendas particulares habitadas que disponen de drenaje
+		vph_dren_p::int(read("VPH_DREN_P")) 	// Porcentaje de viviendas particulares habitadas que disponen de drenaje
+		
+];
+
+	
+	create persona number:100;	//creas 100 instancias de la especie persona.
+	}
+reflex principal {
+	ask manzana {
+		densidad <- pob0_14/shape.area#m2; //Calculas la densidad de población femenina (pobfem) en cada manzana dividiendo por el área.
+		densidad2 <- p15a29a/shape.area#m2;
+		
+	}
+	list <float> mi_lista; 
+	mi_lista <- manzana collect(each.densidad);
+	float max_dens_value <- max(mi_lista);
+	write mi_lista;
+	write max_dens_value;
+	list <float> mi_lista2; 
+	mi_lista2 <- manzana collect(each.densidad2);
+	float max_dens2_value <- max(mi_lista2);
+	write mi_lista2;
+	write max_dens2_value;
+	ask manzana {
+		densidad <- (densidad/max_dens_value)*100;
+		densidad2 <- (densidad2/max_dens2_value)*100;
+	}
+	mi_lista <- manzana collect(each.densidad);
+	mi_lista2 <- manzana collect(each.densidad2);
+	write mi_lista; //densidades normalizadas
+	write mi_lista2;
+}
+
+}
+
+
+
+
+
+
+
+
+species persona skills:[moving]{
+	int estatura;
+	int edad;
+	string nombre;
+	point ubicacion;
+	init {
+		location <- one_of(manzana).location;
+		
+	}reflex {
+		do wander;
+	}
+	aspect normal{draw circle(20) color:#red;
+	} 
+}
+
+
+species manzana {
+	// #############  POBLACION ##################
+		int pobtot;
+		int pobfem;
+		int ppobfem;
+		int pobmas;
+		int ppobmas;
+		int pob0_14;
+		int pob0_14_p;
+		int p15a29a;
+		int p15a29a_p;
+		int p30a59a;
+		int p30a59a_p;
+		int p_60ymas;
+		int p_60ymas_p;
+		int p_cd_t;
+		int p_cd_p;
+		int graproes;
+		int graproes_f;
+		int graproes_m;
+	// #############  VIVIENDA ##################
+		int vivtot;
+		int vivpar;
+		int vivpar_p;
+		int tvipahab;
+		int tvipahab_p;
+		int vivnohab;
+		int vivnohab_p;
+		int prom_ocup;
+		int pro_ocup_c;
+		int v3masocu;
+		int v3masocu_p;
+		int vph_pidt;
+		int vph_pidt_p;
+		int vph_c_el;
+		int vph_c_el_p;
+		int vph_exsa;
+		int vph_exsa_p;
+		int vph_dren;
+		int vph_dren_p;
+	float densidad;
+	float densidad2;
+	float propor_viviendas_habitadas;
+	rgb mi_color;
+	rgb mi_color2 <-rgb (164, 251, 174, transparencia);
+	int transparencia <- 150;
+	aspect default{
+		if(densidad<0.25){//valor de densidad baja
+			mi_color <-rgb (164, 251, 174, transparencia);
+		}
+		else if (densidad<0.50){
+			mi_color <-rgb (223, 232, 66, transparencia);
+		}
+		else if (densidad<0.75){
+			mi_color <-rgb (213, 30, 75, transparencia);
+			
+		}
+		else{
+			mi_color <-#maroon;
+		}
+		draw shape color:mi_color;
+		//rojointenso, rojo, amarillo, verde
+		
+	}
+	aspect default2{
+		if(densidad<0.25){//valor de densidad baja
+			mi_color <-rgb (#blue, transparencia);
+		}
+		else if (densidad<0.50){
+			mi_color <-rgb (#lime, transparencia);
+		}
+		else if (densidad<0.75){
+			mi_color <-rgb (#indigo, transparencia);
+			
+		}
+		else{
+			mi_color <-#maroon;
+		}
+		draw shape color:mi_color;
+		//rojointenso, rojo, amarillo, verde
+		
+	}
+}	
+
+
+experiment mi_experimento{
+	output {
+		display mi_visualizacion background:rgb (45, 45, 45, 255) {
+			species manzana aspect:default;
+			species manzana aspect:default2;
+			//species persona aspect:normal;
+			
+			
+			
+		}
+		
+	}
+}
+
+
+
